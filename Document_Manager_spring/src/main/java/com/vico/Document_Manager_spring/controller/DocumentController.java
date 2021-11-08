@@ -1,7 +1,6 @@
 package com.vico.Document_Manager_spring.controller;
+import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.text.DocumentException;
-import com.vico.Document_Manager_spring.service.DocumentService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -26,12 +25,11 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 @RequestMapping("/document")
 public class DocumentController {
 
-    @Autowired
-    private DocumentService service;
-
     //static variables
     public static final String DIRECTORY = "src/documents/";
-    public static final String OUTPUT = "src/doc_protected/";
+    public static final String OUTPUT = System.getProperty("user.dir");
+    public static final String USER_PASSWORD = "password";
+    public static final String OWNER_PASSWORD = "password1";
 
 
 
@@ -43,31 +41,37 @@ public class DocumentController {
             String filename = StringUtils.cleanPath(file.getOriginalFilename());
             Path fileStorage = get(DIRECTORY, filename).toAbsolutePath().normalize();
             copy(file.getInputStream(), fileStorage, REPLACE_EXISTING);
-
-            File f = new File(String.valueOf(fileStorage));
-            if(!f.exists() && !f.isDirectory()) {
-                try {
-
-                    service.encryptPdf(f, OUTPUT);
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-            }
-
+            encrypt(fileStorage, filename);
             filenames.add(filename);
 
         }
         return ResponseEntity.ok().body(filenames);
     }
 
+    public static void encrypt(Path src, String filename){
+            try {
+                FileInputStream fis = new FileInputStream(String.valueOf(src));
+                PdfReader pdfReader = new PdfReader(fis);
+                pdfReader.setUnethicalReading(true);
+                WriterProperties writerProperties = new WriterProperties();
+                writerProperties.setStandardEncryption(OWNER_PASSWORD.getBytes(),
+                        USER_PASSWORD.getBytes(), EncryptionConstants.ALLOW_PRINTING,
+                        EncryptionConstants.ENCRYPTION_AES_128);
+                PdfWriter pdfWriter = new PdfWriter(new FileOutputStream(filename), writerProperties);
+                PdfDocument pdfDocument = new PdfDocument(pdfReader, pdfWriter);
+                pdfDocument.close();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+    }
 
 
     //download files method
     @GetMapping("download/{filename}")
     public ResponseEntity<Resource> downloadFiles(@PathVariable("filename") String filename) throws IOException{
-        Path filePath = get(DIRECTORY).toAbsolutePath().normalize().resolve(filename);
+        Path filePath = get(OUTPUT).toAbsolutePath().normalize().resolve(filename);
         if(!Files.exists(filePath)){
             throw new FileNotFoundException(filename + " was not found!");
         }
