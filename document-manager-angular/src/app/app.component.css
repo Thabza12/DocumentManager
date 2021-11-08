@@ -1,0 +1,24 @@
+.background{
+    position: fixed;
+    top: 0px;
+    bottom: -587px;
+    left: 0px;
+    right: -1366px;
+    background-image: url(src/assets/images/7fe774bbacce09f00cb5b2e3cbc48db3.png);
+    background-repeat: no-repeat;
+    background-size:cover;
+    background-position: center center;
+    filter: blur();
+    
+}
+
+.doc-container{
+    position: absolute;
+    right: 35%;
+    top: 40px;
+    background-color: white;
+    
+}
+
+
+
